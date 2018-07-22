@@ -1,0 +1,23 @@
+This library, source code and methods used, are private and should be kept in
+secrecy.
+
+Permission of use, copy or modification should be explicitly declared by the
+author, Graciliano Monteiro Passos.
+
+The access of the source code, if permitted by the author, is just to allow
+integration of the behavior of the library with other solutions. Any access
+to the source code, or part of it, should be kept in secrecy and the
+dissemination of it should be controlled. Any issue or break of this rules
+will imply responsibility for the act.
+
+Copyright (C) 2012-2018+ Graciliano Monteiro Passos (gracilianomp@gmail.com)
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
