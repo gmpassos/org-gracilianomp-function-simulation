@@ -2,6 +2,7 @@
   "distanceMaxError": 0,
   "maxOperations": 3,
   "skipOperationsRatio": 0,
+  "simulationThreads": 2,
   "arithmeticUnit": "ArithmeticUnitFast",
 
   "globalStack": [2, 3],
