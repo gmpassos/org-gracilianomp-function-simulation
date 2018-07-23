@@ -1,6 +1,8 @@
 package org.gracilianomp.function;
 
 import org.gracilianomp.arithmetic.ArithmeticOperation;
+import org.gracilianomp.arithmetic.MathObject;
+import org.gracilianomp.arithmetic.MathValue;
 
 import java.util.Objects;
 
@@ -48,6 +50,16 @@ final public class FunctionOperation {
 
     public ArithmeticOperation getArithmeticOperation() {
         return arithmeticOperation;
+    }
+
+    public <V extends MathValue> MathObject<V> getStackValueA(MathFunction<V> function) {
+        return valueA.getStackValue(function) ;
+    }
+
+    public <V extends MathValue> MathObject<V> getStackValueB(MathFunction<V> function) {
+        if (valueB == null) return null ;
+
+        return valueB.getStackValue(function) ;
     }
 
     public StackValue getValueA() {
