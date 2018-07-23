@@ -31,7 +31,7 @@ final public class StackValue implements Comparable<StackValue> {
     }
 
     public <V extends MathValue> MathObject<V> getStackValue(MathFunction<V> function) {
-        MathStack<V> stack = function.getStack(stackType);
+        MathStack<V> stack = stackType.getStack(function);
         return stack.getValueObject( stackIndex, valueIndex ) ;
     }
 
