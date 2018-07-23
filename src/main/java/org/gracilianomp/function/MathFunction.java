@@ -128,6 +128,11 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
             globalComplexity += complexity ;
         }
 
+        if ( operationsExtra != null ) {
+            int complexity = operationsExtra.getArithmeticOperation().getComplexity();
+            globalComplexity += complexity ;
+        }
+
         return globalComplexity ;
     }
 
@@ -262,8 +267,8 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
     }
 
     public MathObject<V> executeOperation(FunctionOperation operation) {
-        MathObject<V> vA = getStackValue(operation.getValueA());
-        MathObject<V> vB = operation.hasValueB() ? getStackValue(operation.getValueB()) : null ;
+        MathObject<V> vA = operation.getStackValueA(this) ;
+        MathObject<V> vB = operation.getStackValueB(this) ;
 
         MathObject<V> res = vA.calc(operation.getArithmeticOperation(), vB);
         return res ;
@@ -278,12 +283,7 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
     }
 
     public MathStack<V> getStack(StackType stackType) {
-        switch (stackType) {
-            case INPUT: return this.inputStack ;
-            case RUNTIME: return this.runtimeStack ;
-            case GLOBAL: return this.globalStack ;
-            default: throw new IllegalStateException("Can't handle StackType: "+ stackType) ;
-        }
+        return stackType.getStack(this);
     }
 
     public double distance(MathObject<V> target) {
