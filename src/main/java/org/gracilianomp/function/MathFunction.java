@@ -309,20 +309,80 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
     }
 
     public boolean hasUnusedOperation() {
-        boolean[] usedOperations = calcUsedOperations();
-
-        for (int i = usedOperations.length-2 ; i >= 0 ; i--) {
-            if ( !usedOperations[i] ) return true ;
+        int operationsSize = getOperationsSize();
+        if ( operationsSize < 64 ) {
+            long usedOperations = calcUsedOperationsBits();
+            long expectedBits = (1L << (operationsSize-1)) -1 ;
+            return usedOperations != expectedBits ;
         }
+        else {
+            boolean[] usedOperations = calcUsedOperationsArray();
 
-        return false ;
+            for (int i = usedOperations.length-2 ; i >= 0 ; i--) {
+                if ( !usedOperations[i] ) return true ;
+            }
+
+            return false ;
+        }
     }
 
-    private boolean[] calcUsedOperations() {
-        boolean[] usedOperations = new boolean[operations.length] ;
+    private long calcUsedOperationsBits() {
+        long usedOperations = 0 ;
 
         for (int i = operations.length-1; i >= 0; i--) {
             FunctionOperation operation = operations[i];
+
+            StackValue valueA = operation.getValueA();
+            StackValue valueB = operation.getValueB();
+
+            if ( valueA.getStackType() == StackType.RUNTIME ) {
+                usedOperations|= 1L << valueA.getStackIndex() ;
+            }
+
+            if ( valueB != null && valueB.getStackType() == StackType.RUNTIME ) {
+                usedOperations|= 1L << valueB.getStackIndex() ;
+            }
+        }
+
+        if (operationsExtra != null) {
+            FunctionOperation operation = this.operationsExtra ;
+
+            StackValue valueA = operation.getValueA();
+            StackValue valueB = operation.getValueB();
+
+            if ( valueA.getStackType() == StackType.RUNTIME ) {
+                usedOperations|= 1L << valueA.getStackIndex() ;
+            }
+
+            if ( valueB != null && valueB.getStackType() == StackType.RUNTIME ) {
+                usedOperations|= 1L << valueB.getStackIndex() ;
+            }
+        }
+
+
+        return usedOperations ;
+    }
+
+    private boolean[] calcUsedOperationsArray() {
+        boolean[] usedOperations = new boolean[ getOperationsSize()-1 ] ;
+
+        for (int i = operations.length-1; i >= 0; i--) {
+            FunctionOperation operation = operations[i];
+
+            StackValue valueA = operation.getValueA();
+            StackValue valueB = operation.getValueB();
+
+            if ( valueA.getStackType() == StackType.RUNTIME ) {
+                usedOperations[valueA.getStackIndex()] = true ;
+            }
+
+            if ( valueB != null && valueB.getStackType() == StackType.RUNTIME ) {
+                usedOperations[valueB.getStackIndex()] = true ;
+            }
+        }
+
+        if (operationsExtra != null) {
+            FunctionOperation operation = this.operationsExtra ;
 
             StackValue valueA = operation.getValueA();
             StackValue valueB = operation.getValueB();

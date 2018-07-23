@@ -36,6 +36,37 @@ public class MathFunctionTest {
 
         Assert.assertEquals( 5L , result.getValue().getValueInteger() );
 
+        Assert.assertFalse( mathFunction.hasUnusedOperation() );
+
+    }
+
+
+    @Test
+    public void test1UnusedOP() {
+
+        MathStack<MathValueFast> globalStack = new MathStack<>(StackType.GLOBAL, true);
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(2)) );
+
+        MathStack<MathValueFast> inputStack = new MathStack<>(StackType.INPUT, true);
+        inputStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(3)) );
+        inputStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(4)) );
+
+        FunctionOperation[] operations = new FunctionOperation[] {
+                new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.INPUT, 0) , new StackValue(StackType.INPUT, 0) ) ,
+                new FunctionOperation( ArithmeticOperation.MULTIPLY , new StackValue(StackType.INPUT, 0) , new StackValue(StackType.INPUT, 0) ) ,
+                new FunctionOperation( ArithmeticOperation.MULTIPLY , new StackValue(StackType.INPUT, 1) , new StackValue(StackType.INPUT, 1) ) ,
+                new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 2) ) ,
+                new FunctionOperation( ArithmeticOperation.ROOT , new StackValue(StackType.RUNTIME, 3) , new StackValue(StackType.GLOBAL, 0) ) ,
+        };
+
+        MathFunction<MathValueFast> mathFunction = new MathFunction<>(globalStack, inputStack, operations);
+
+        MathObject<MathValueFast> result = mathFunction.execute();
+
+        Assert.assertEquals( 5L , result.getValue().getValueInteger() );
+
+        Assert.assertTrue( mathFunction.hasUnusedOperation() );
+
     }
 
     @Test
