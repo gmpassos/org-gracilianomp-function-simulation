@@ -82,98 +82,31 @@ final public class ArithmeticUnitFast extends ArithmeticUnit<MathValueFast> {
 
     @Override
     public MathValueFast sum(MathValueFast a, MathValueFast b) {
-        if ( a.isInteger() && b.isInteger() ) {
-            return new MathValueFast.MathValueFastInteger(a.getValueInteger() + b.getValueInteger());
-        }
-        else {
-            return new MathValueFast.MathValueFastDecimal(a.getValueDecimal() + b.getValueDecimal());
-        }
+        return a.sum(b) ;
     }
 
     @Override
     public MathValueFast subtract(MathValueFast a, MathValueFast b) {
-        if ( a.isInteger() && b.isInteger() ) {
-            return new MathValueFast.MathValueFastInteger(a.getValueInteger() - b.getValueInteger());
-        }
-        else {
-            return new MathValueFast.MathValueFastDecimal(a.getValueDecimal() - b.getValueDecimal());
-        }
+        return a.subtract(b) ;
     }
 
     public MathValueFast multiply(MathValueFast a, MathValueFast b) {
-        if ( a.isInteger() && b.isInteger() ) {
-            return new MathValueFast.MathValueFastInteger(a.getValueInteger() * b.getValueInteger());
-        }
-        else {
-            return new MathValueFast.MathValueFastDecimal(a.getValueDecimal() * b.getValueDecimal());
-        }
+        return a.multiply(b) ;
     }
 
     @Override
     public MathValueFast divide(MathValueFast a, MathValueFast b) {
-        if ( b.isZero() ) {
-            throw new ArithmeticException("Can't divide by zero: "+ a +" / 0") ;
-        }
-
-        boolean aInteger = a.isInteger();
-        boolean bInteger = b.isInteger();
-
-        if ( aInteger && bInteger) {
-            long v1 = a.getValueInteger();
-            long v2 = b.getValueInteger();
-
-            if (v1 % v2 == 0) {
-                return new MathValueFast.MathValueFastInteger(a.getValueInteger() / b.getValueInteger());
-            }
-            else {
-                return new MathValueFast.MathValueFastDecimal(a.getValueDecimal() / b.getValueDecimal());
-            }
-        }
-        else {
-            return new MathValueFast.MathValueFastDecimal(a.getValueDecimal() / b.getValueDecimal());
-        }
+        return a.divide(b) ;
     }
 
     @Override
     public MathValueFast power(MathValueFast a, MathValueFast b) {
-        boolean aZero = a.isZero();
-        boolean bZero = b.isZero();
-
-        if ( aZero && bZero) {
-            throw new ArithmeticException("Can't power 0 to 0!") ;
-        }
-
-        double v1 = a.getValueDecimal();
-        double v2 = b.getValueDecimal();
-        double val = Math.pow(v1,v2) ;
-
-        return new MathValueFast.MathValueFastDecimal(val);
+        return a.power(b) ;
     }
 
     @Override
     public MathValueFast root(MathValueFast a, MathValueFast b) {
-        if ( b.isZero() ) {
-            throw new ArithmeticException("Can't power to 0!") ;
-        }
-        else if ( a.isNegative() && b.isEven() ) {
-            throw new ArithmeticException("Can't power negative number to even: "+ a +"ˆ"+ b) ;
-        }
-
-        double v1 = a.getValueDecimal();
-        double v2 = b.getValueDecimal();
-
-        double val ;
-        if (v2 == 2d) {
-            val = Math.sqrt(v1) ;
-        }
-        else if (v2 == 3d) {
-            val = Math.cbrt(v1) ;
-        }
-        else {
-            val = Math.pow(v1 , 1d/v2) ;
-        }
-
-        return new MathValueFast.MathValueFastDecimal(val);
+        return a.root(b) ;
     }
 
     @Override

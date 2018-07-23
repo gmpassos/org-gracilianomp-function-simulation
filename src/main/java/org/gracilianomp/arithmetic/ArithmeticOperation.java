@@ -61,7 +61,7 @@ public enum ArithmeticOperation {
 
     /////////////////////////////////////////////////////////
 
-    abstract static private class Caller {
+    abstract static class Caller {
         abstract <V extends MathValue> V call(ArithmeticUnit<V> au, V a, V b) ;
         abstract <V extends MathValue> MathObject<V> call(MathObject<V> a, MathObject<V> b) ;
     }
