@@ -11,8 +11,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 final public class FunctionSimulation<V extends MathValue> {
+
+    static final int DEFAULT_SIMULATION_THREADS = Math.max(Runtime.getRuntime().availableProcessors() , 2) ;
 
     final private MathFunction<V> function ;
     final private MathObject<V> target ;
@@ -20,13 +23,21 @@ final public class FunctionSimulation<V extends MathValue> {
     final private double distanceMaxError ;
     final private int maxOperations;
     final private float skipOperationsRatio;
+    final private int simulationThreads;
 
     public FunctionSimulation(MathFunction<V> function, MathObject<V> target, double distanceMaxError, int maxOperations, double skipOperationsRatio) {
+        this(function, target, distanceMaxError, maxOperations, skipOperationsRatio, DEFAULT_SIMULATION_THREADS);
+    }
+
+    public FunctionSimulation(MathFunction<V> function, MathObject<V> target, double distanceMaxError, int maxOperations, double skipOperationsRatio, int simulationThreads) {
+        if (simulationThreads < 1) simulationThreads = DEFAULT_SIMULATION_THREADS ;
+
         this.function = prepareFunction(function);
         this.target = target;
         this.distanceMaxError = distanceMaxError;
         this.maxOperations = maxOperations;
         this.skipOperationsRatio = (float) skipOperationsRatio;
+        this.simulationThreads = simulationThreads;
     }
 
     private MathFunction<V> prepareFunction(MathFunction<V> function) {
@@ -55,6 +66,10 @@ final public class FunctionSimulation<V extends MathValue> {
         return skipOperationsRatio;
     }
 
+    public int getSimulationThreads() {
+        return simulationThreads;
+    }
+
     public MathFunction<V> findFunctionWithRetries(int maxRetries) {
         for (int i = 0; i < maxRetries; i++) {
             MathFunction<V> function = findFunction();
@@ -77,7 +92,7 @@ final public class FunctionSimulation<V extends MathValue> {
     public MathFunction<V> findFunction() {
         FunctionFinder<V> functionFinder = new FunctionFinder<>(this);
 
-        functionFinder.start(4);
+        functionFinder.start();
 
         function.getResult();
         generateOperations(functionFinder, function);
@@ -198,50 +213,95 @@ final public class FunctionSimulation<V extends MathValue> {
     }
 
     private double evaluateFunctionDistance(MathFunction<V> function, double bestFunctionDistance) {
-        double distance = function.distanceNoException(target);
-        if ( Double.isNaN(distance) ) return Double.NaN ;
-        if ( distance > bestFunctionDistance ) return distance ;
-
         if ( !hasExtraTargets() ) {
-            return distance ;
+            return function.distanceNoException(target);
         }
 
-        int resumeIndex = evaluateFunctionDistance_extraTargets_lastIndexBreak ;
+        int[] lastIndexBreak = evaluateFunctionDistance_extraTargets_lastIndexBreak.get();
 
-        double distance2 = evaluateFunctionDistance_extraTargets_distance(function, resumeIndex);
-        if ( Double.isNaN(distance2) ) return Double.NaN ;
-        if ( distance2 > bestFunctionDistance ) return distance2 ;
+        int resumeIndex0 = lastIndexBreak[0] ;
 
-        double maxDistance = distance > distance2 ? distance : distance2 ;
+        if (resumeIndex0 > 0) {
+            double distanceResume0 = evaluateFunctionDistance_extraTargets_distance(function, resumeIndex0);
+            if ( distanceResume0 > bestFunctionDistance || Double.isNaN(distanceResume0) ) return distanceResume0;
 
-        maxDistance = evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, 0, resumeIndex);
-        maxDistance = evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, resumeIndex+1, this.extraTargetsSize);
+            double distance0 = function.distanceNoException(target);
+            if ( distance0 > bestFunctionDistance || Double.isNaN(distance0) ) return distance0;
 
-        return maxDistance ;
+            int resumeIndex1 = lastIndexBreak[1] ;
+
+            if (resumeIndex1 > 0 && resumeIndex1 != resumeIndex0) {
+                double distanceResume1 = evaluateFunctionDistance_extraTargets_distance(function, resumeIndex1);
+                if ( distanceResume1 > bestFunctionDistance || Double.isNaN(distanceResume1) ) return distanceResume1;
+
+                double maxDistanceResume = distanceResume0 > distanceResume1 ? distanceResume0 : distanceResume1 ;
+                double maxDistance = distance0 > maxDistanceResume ? distance0 : maxDistanceResume;
+
+                int idx0 , idx1 ;
+                if (resumeIndex0 < resumeIndex1) {
+                    idx0 = resumeIndex0 ;
+                    idx1 = resumeIndex1 ;
+                }
+                else {
+                    idx0 = resumeIndex1 ;
+                    idx1 = resumeIndex0 ;
+                }
+
+                maxDistance = evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, idx0+1, idx1);
+                if ( maxDistance > bestFunctionDistance || Double.isNaN(maxDistance) ) return maxDistance;
+
+                maxDistance = evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, 0, idx0);
+                if ( maxDistance > bestFunctionDistance || Double.isNaN(maxDistance) ) return maxDistance;
+
+                return evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, idx1+1, this.extraTargetsSize);
+            }
+            else {
+                double maxDistance = distance0 > distanceResume0 ? distance0 : distanceResume0;
+
+                maxDistance = evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, 0, resumeIndex0);
+                if ( maxDistance > bestFunctionDistance || Double.isNaN(maxDistance) ) return maxDistance;
+
+                return evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, maxDistance, resumeIndex0 +1, this.extraTargetsSize);
+            }
+        }
+        else {
+            double distance0 = function.distanceNoException(target);
+            if ( distance0 > bestFunctionDistance || Double.isNaN(distance0) ) return distance0;
+
+            return evaluateFunctionDistance_extraTargets(function, bestFunctionDistance, distance0, 0, this.extraTargetsSize);
+        }
     }
 
-    private volatile int evaluateFunctionDistance_extraTargets_lastIndexBreak = 0 ;
+    final private ThreadLocal<int[]> evaluateFunctionDistance_extraTargets_lastIndexBreak = ThreadLocal.withInitial(new Supplier<int[]>() {
+        @Override
+        public int[] get() {
+            return new int[] {-1, -1} ;
+        }
+    }) ;
 
     private double evaluateFunctionDistance_extraTargets(MathFunction<V> function, double bestFunctionDistance, double maxDistance, int offset, int limit) {
-        if ( Double.isNaN(maxDistance) ) return Double.NaN ;
+        int[] lastIndexBreak = evaluateFunctionDistance_extraTargets_lastIndexBreak.get();
 
         for (int i = offset; i < limit; i++) {
             double distance2 = evaluateFunctionDistance_extraTargets_distance(function, i);
 
             if ( Double.isNaN(distance2) ) {
-                evaluateFunctionDistance_extraTargets_lastIndexBreak = i ;
+                lastIndexBreak[1] = lastIndexBreak[0] ;
+                lastIndexBreak[0] = i ;
                 return Double.NaN ;
             }
 
             if (distance2 > maxDistance) maxDistance = distance2 ;
 
             if (distance2 > bestFunctionDistance ) {
-                evaluateFunctionDistance_extraTargets_lastIndexBreak = i ;
+                lastIndexBreak[1] = lastIndexBreak[0] ;
+                lastIndexBreak[0] = i ;
                 return maxDistance ;
             }
         }
 
-        evaluateFunctionDistance_extraTargets_lastIndexBreak = 0 ;
+        lastIndexBreak[1] = lastIndexBreak[0] ;
+        lastIndexBreak[0] = -1 ;
 
         return maxDistance ;
     }
@@ -513,9 +573,7 @@ final public class FunctionSimulation<V extends MathValue> {
             if ( !function.tryContinueExecution() ) return ;
 
             try {
-                double bestDistance = this.bestFunctionDistance ;
-
-                double distance = functionSimulation.evaluateFunctionDistance(function, bestDistance);
+                double distance = functionSimulation.evaluateFunctionDistance(function, this.bestFunctionDistance);
 
                 if ( !Double.isNaN(distance) ) {
                     setBestFunction(function, distance);
@@ -563,7 +621,20 @@ final public class FunctionSimulation<V extends MathValue> {
                     } catch (InterruptedException e) { e.printStackTrace(); }
                 }
 
-                evaluationQueue.add(function);
+                if ( !evaluationQueue.isEmpty() ) {
+                    MathFunction<V> first = evaluationQueue.peekFirst();
+
+                    if ( function.compareTo(first) < 0 ) {
+                        evaluationQueue.addFirst(function);
+                    }
+                    else {
+                        evaluationQueue.addLast(function);
+                    }
+                }
+                else {
+                    evaluationQueue.addLast(function);
+                }
+
                 evaluationQueue.notifyAll();
             }
         }
@@ -597,21 +668,42 @@ final public class FunctionSimulation<V extends MathValue> {
             int opsIdx = function.getOperationsSize() ;
 
             synchronized (evaluationQueue) {
-                generationQueue[opsIdx].add(function);
+                ArrayDeque<MathFunction<V>> queue = generationQueue[opsIdx];
+
+                if ( !queue.isEmpty() ) {
+                    MathFunction<V> first = queue.peekFirst();
+
+                    if ( function.compareTo(first) < 0 ) {
+                        queue.addFirst(function);
+                    }
+                    else {
+                        queue.addLast(function);
+                    }
+                }
+                else {
+                    queue.addLast(function);
+                }
+
                 evaluationQueue.notifyAll();
             }
         }
 
         private volatile boolean running ;
 
-        public void start(int threads) {
-            if (threads < 1) threads = 1;
+        public void start() {
+            int evalThreads = functionSimulation.getSimulationThreads() ;
+            if (evalThreads < 1) evalThreads = 1;
 
             running = true ;
 
-            for (int i = 0; i < threads; i++) {
-                dispatchEvaluationProcessor();
+            int threadGen = Math.max(evalThreads /2 , 1) ;
+
+            for (int i = 0; i < threadGen; i++) {
                 dispatchGenerationProcessor();
+            }
+
+            for (int i = 0; i < evalThreads; i++) {
+                dispatchEvaluationProcessor() ;
             }
         }
 
@@ -674,7 +766,8 @@ final public class FunctionSimulation<V extends MathValue> {
 
                 if (evaluationQueue.size() < MAX_QUEUE_SIZE) evaluationQueue.notifyAll();
 
-                return evaluationQueue.poll();
+                boolean consumeFromEnd = evaluationQueue.size() % 2 == 0 ;
+                return consumeFromEnd ? evaluationQueue.pollLast() : evaluationQueue.pollFirst() ;
             }
         }
 
@@ -689,7 +782,8 @@ final public class FunctionSimulation<V extends MathValue> {
                 for (int i = maxOperationsM1; i >= 0; i--) {
                     ArrayDeque<MathFunction<V>> queue = generationQueue[i];
                     if ( !queue.isEmpty() ) {
-                        return queue.poll();
+                        boolean consumeFromEnd = queue.size() % 2 == 0 ;
+                        return consumeFromEnd ? queue.pollLast() : queue.pollFirst() ;
                     }
                 }
 
