@@ -72,8 +72,9 @@ public class FunctionSimulationJSONCodec {
         double distanceMaxError = getDouble(objRoot,"distanceMaxError", 0) ;
         int maxOperations = getInt(objRoot,"maxOperations", 4) ;
         double skipOperationsRatio = getDouble(objRoot,"skipOperationsRatio", 0) ;
+        int simulationThreads = getInt(objRoot,"simulationThreads", -1) ;
 
-        FunctionSimulation functionSimulation = new FunctionSimulation<>(mathFunction, targetObject, distanceMaxError, maxOperations, skipOperationsRatio) ;
+        FunctionSimulation functionSimulation = new FunctionSimulation<>(mathFunction, targetObject, distanceMaxError, maxOperations, skipOperationsRatio, simulationThreads) ;
 
         for (int i = 1; i < size; i++) {
             MathStack input = inputs[i] ;
