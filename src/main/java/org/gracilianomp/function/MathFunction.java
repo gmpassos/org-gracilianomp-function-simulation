@@ -15,6 +15,8 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
     final private FunctionOperation[] operations ;
     final private FunctionOperation operationsExtra ;
 
+    final private int operationsSize ;
+
     public MathFunction(MathStack<V> globalStack, MathStack<V> inputStack, FunctionOperation... operations) {
         if ( !globalStack.isImmutable() ) throw new IllegalArgumentException("GlobalStack should be immutable!") ;
         if ( !inputStack.isImmutable() ) throw new IllegalArgumentException("InputStack should be immutable!") ;
@@ -24,6 +26,7 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         this.runtimeStack = new MathStack<>( StackType.RUNTIME.name() );
         this.operations = operations ;
         this.operationsExtra = null ;
+        this.operationsSize = calcOperationsSize();
 
         this.globalStack.lockStack();
         this.inputStack.lockStack();
@@ -36,6 +39,7 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         this.executedOperations = executedOperations;
         this.operations = operations ;
         this.operationsExtra = operationsExtra ;
+        this.operationsSize = calcOperationsSize();
     }
 
     public MathFunction<V> copy() {
@@ -104,6 +108,10 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
     }
 
     public int getOperationsSize() {
+        return operationsSize ;
+    }
+
+    private int calcOperationsSize() {
         return operationsExtra != null ? operations.length+1 : operations.length ;
     }
 
@@ -119,7 +127,16 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         return operations[idx];
     }
 
+    private long operationsComplexity ;
+
     public long getOperationsComplexity() {
+        if ( operationsComplexity == 0 ) {
+            operationsComplexity = calcOperationsComplexity() ;
+        }
+        return operationsComplexity ;
+    }
+
+    private long calcOperationsComplexity() {
         long globalComplexity = 0 ;
 
         for (int i = operations.length-1 ; i >= 0; i--) {
@@ -461,8 +478,8 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
     public int compareTo(MathFunction<V> o) {
         if (o == null) return -1 ;
 
-        int s1 = this.getOperationsSize();
-        int s2 = o.getOperationsSize();
+        int s1 = this.operationsSize ;
+        int s2 = o.operationsSize ;
 
         int cmp = Integer.compare(s1,s2) ;
 
@@ -472,4 +489,22 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
 
         return cmp ;
     }
+
+    public boolean isBetter(MathFunction<V> o) {
+        if (o == null) return true ;
+
+        int s1 = this.operationsSize ;
+        int s2 = o.operationsSize ;
+
+        if (s1 < s2) return true ;
+
+        if (s1 == s2) {
+            return this.getOperationsComplexity() < o.getOperationsComplexity() ;
+        }
+        else {
+            return false ;
+        }
+    }
+
+
 }
