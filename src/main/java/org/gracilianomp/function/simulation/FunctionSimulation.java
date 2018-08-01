@@ -6,10 +6,7 @@ import org.gracilianomp.arithmetic.MathValue;
 import org.gracilianomp.function.*;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -38,6 +35,8 @@ final public class FunctionSimulation<V extends MathValue> {
         this.maxOperations = maxOperations;
         this.skipOperationsRatio = (float) skipOperationsRatio;
         this.simulationThreads = simulationThreads;
+        
+        calcEnabledOperations();
     }
 
     private MathFunction<V> prepareFunction(MathFunction<V> function) {
@@ -68,6 +67,47 @@ final public class FunctionSimulation<V extends MathValue> {
 
     public int getSimulationThreads() {
         return simulationThreads;
+    }
+
+    private HashMap<ArithmeticOperation,Boolean>  disableOperations = new HashMap<>();
+
+    private ArithmeticOperation[] enabledOperations ;
+
+    synchronized public void clearDisabledOperations() {
+        disableOperations.clear();
+        calcEnabledOperations();
+    }
+
+    synchronized public void disableOperation(ArithmeticOperation op) {
+        disableOperations.put(op , Boolean.TRUE) ;
+        calcEnabledOperations();
+    }
+
+    synchronized public boolean isdDisabledOperation(ArithmeticOperation op) {
+        boolean contains = disableOperations.containsKey(op);
+        calcEnabledOperations();
+        return contains;
+    }
+
+    synchronized public void enableOperation(ArithmeticOperation op) {
+        disableOperations.remove(op) ;
+        calcEnabledOperations();
+    }
+
+    synchronized private void calcEnabledOperations() {
+        ArrayList<Object> list = new ArrayList<>();
+
+        for (ArithmeticOperation op : ArithmeticOperation.values()) {
+            if ( !disableOperations.containsKey(op) ) {
+                list.add(op) ;
+            }
+        }
+
+        if (list.isEmpty()) {
+            throw new IllegalStateException("All operations are disabled!");
+        }
+
+        enabledOperations = list.toArray( new ArithmeticOperation[list.size()] ) ;
     }
 
     public MathFunction<V> findFunctionWithRetries(int maxRetries) {
@@ -368,6 +408,8 @@ final public class FunctionSimulation<V extends MathValue> {
             }
         }
 
+        ArithmeticOperation[] enabledOperations = this.enabledOperations;
+
         long immutableGenerationID = 0 ;
         long runtimeGenerationID = 0 ;
 
@@ -398,7 +440,7 @@ final public class FunctionSimulation<V extends MathValue> {
                             for (int oIdx2 = -1; oIdx2 < oSize2; oIdx2++) {
                                 StackValue value2 = new StackValue(stackType2, sIdx2, oIdx2);
 
-                                LOOP_ARITH_OPS: for (ArithmeticOperation arithmeticOperation : ArithmeticOperation.values()) {
+                                LOOP_ARITH_OPS: for (ArithmeticOperation arithmeticOperation : enabledOperations) {
                                     if ( arithmeticOperation.isCollection() && arithmeticOperation.isCollectionSingletonUseless() ) {
                                         if ( oSize1 == 0 ) {
                                             continue LOOP_ARITH_OPS ;
@@ -597,7 +639,13 @@ final public class FunctionSimulation<V extends MathValue> {
                     evaluationQueue.notifyAll();
 
                     if (waitCount % (VERBOSE_INTERVAL/10) == 0) {
+                        MathFunction<V> function = this.bestFunction;
+
+
                         System.out.println("-- waitQueueFullyConsumed[evaluation]: eval: " + formatNumber(evaluationQueue.size()) + " ; gen: " + formatNumber(generationQueueSize()) +" = "+ Arrays.toString(generationQueueSizes()) +" > bestFunctionDistance: "+ bestFunctionDistance );
+
+                        String operationsInfos = function.operationsInfos();
+                        System.out.println("\n"+operationsInfos);
 
                     }
 
