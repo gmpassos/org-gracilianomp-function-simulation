@@ -602,13 +602,15 @@ final public class FunctionSimulation<V extends MathValue> {
         }
 
         synchronized public void setBestFunction(MathFunction<V> function, double distance) {
+            double currentBestFunctionDistance = this.bestFunctionDistance ;
+
             if (
-                    distance < bestFunctionDistance ||
-                    ( distance == bestFunctionDistance && function.compareTo(bestFunction) < 0 )
+                    distance < currentBestFunctionDistance ||
+                    ( distance == currentBestFunctionDistance && function.isBetter(bestFunction) )
                 ) {
 
-                bestFunction = function;
-                bestFunctionDistance = distance ;
+                this.bestFunction = function;
+                this.bestFunctionDistance = distance ;
 
                 System.out.println("bestFunctionDistance: "+ distance);
                 System.out.println(function);
