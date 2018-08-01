@@ -413,6 +413,9 @@ final public class FunctionSimulation<V extends MathValue> {
         long immutableGenerationID = 0 ;
         long runtimeGenerationID = 0 ;
 
+        MathFunction<V>[] unflushedFunctions = new MathFunction[1000] ;
+        int unflushedFunctionsSz = 0 ;
+
         for (StackType stackType1 : StackType.values()) {
             MathStack<V> stack1 = function.getStack(stackType1);
             int size1 = stack1.size();
@@ -459,12 +462,22 @@ final public class FunctionSimulation<V extends MathValue> {
                                         if ( random.nextFloat() < skipOperationsRatio ) continue;
 
                                         MathFunction<V> function2 = function.copy(functionOperation);
-                                        functionFinder.addToEvaluationQueue(function2);
+
+                                        if ( unflushedFunctionsSz == unflushedFunctions.length ) {
+                                            unflushedFunctions = Arrays.copyOf(unflushedFunctions, unflushedFunctionsSz+1000) ;
+                                        }
+
+                                        unflushedFunctions[unflushedFunctionsSz++] = function2 ;
                                     }
                                 }
+
+
                             }
 
                         }
+
+                        functionFinder.addToEvaluationQueue(unflushedFunctions, unflushedFunctionsSz);
+                        unflushedFunctionsSz = 0 ;
                     }
                 }
 
@@ -542,9 +555,10 @@ final public class FunctionSimulation<V extends MathValue> {
         return operations2 ;
     }
 
-    static private class FunctionFinder<V extends MathValue> {
+    final static private class FunctionFinder<V extends MathValue> {
         static final private int VERBOSE_INTERVAL = 100000 ;
-        static final private int MAX_QUEUE_SIZE = 1000 ;
+
+        final private int maxEvaluationQueueSize ;
 
         final private FunctionSimulation<V> functionSimulation ;
         final private MathObject<V> target ;
@@ -558,9 +572,11 @@ final public class FunctionSimulation<V extends MathValue> {
             this.functionSimulation = functionSimulation ;
             this.target = functionSimulation.getTarget();
 
+            int simulationThreads = functionSimulation.getSimulationThreads();
+            this.maxEvaluationQueueSize = (simulationThreads*2)*simulationThreads*2 * 100 ;
+
             this.maxOperations = functionSimulation.getMaxOperations();
             this.maxOperationsM1 = this.maxOperations - 1;
-
 
             this.generationQueue = new ArrayDeque[maxOperations] ;
 
@@ -632,58 +648,76 @@ final public class FunctionSimulation<V extends MathValue> {
         }
 
         public void waitQueueFullyConsumed() {
-            int waitCount = 0 ;
-            synchronized (evaluationQueue) {
-                while ( !evaluationQueue.isEmpty() || !generationQueueEmpty() ) {
-                    waitCount++;
-                    evaluationQueue.notifyAll();
+            int waitCount = 0;
 
-                    if (waitCount % (VERBOSE_INTERVAL/10) == 0) {
-                        MathFunction<V> function = this.bestFunction;
+            final Object sleeper = new Object();
 
+            synchronized (sleeper) {
 
-                        System.out.println("-- waitQueueFullyConsumed[evaluation]: eval: " + formatNumber(evaluationQueue.size()) + " ; gen: " + formatNumber(generationQueueSize()) +" = "+ Arrays.toString(generationQueueSizes()) +" > bestFunctionDistance: "+ bestFunctionDistance );
+                while (true) {
+                    synchronized (evaluationQueue) {
+                        if ( evaluationQueue.isEmpty() && generationQueueEmptySync() ) {
+                            return ;
+                        }
 
-                        String operationsInfos = function.operationsInfos();
-                        System.out.println("\n"+operationsInfos);
+                        waitCount++;
 
+                        if (waitCount % 10 == 0) {
+                            MathFunction<V> function = this.bestFunction;
+
+                            System.out.println("--[" + waitCount + "] waitQueueFullyConsumed[simulationThreads: " + functionSimulation.getSimulationThreads() + "]: eval: " + formatNumber(evaluationQueue.size()) + " ; gen: " + formatNumber(generationQueueSizeSync()) + " = " + Arrays.toString(generationQueueSizesSync()) + " > bestFunctionDistance: " + bestFunctionDistance);
+
+                            String operationsInfos = function != null ? function.operationsInfos() : "";
+                            System.out.println("\n" + operationsInfos);
+                        }
                     }
 
                     try {
-                        long sleep = evaluationQueue.isEmpty() ? 1000L : 1000L * 10 ;
-                        evaluationQueue.wait(sleep);
+                        sleeper.wait(1000);
                     }
                     catch (InterruptedException e) {}
                 }
+
             }
         }
 
 
-        public void addToEvaluationQueue(MathFunction<V> function) {
-            if ( foundValidFunction ) return ;
+        public void addToEvaluationQueue(MathFunction<V>[] unflushedFunctions , int unflushedFunctionsSz) {
+            if ( unflushedFunctionsSz < 1 || foundValidFunction ) return ;
 
             synchronized (evaluationQueue) {
-                while ( evaluationQueue.size() > MAX_QUEUE_SIZE ) {
+                while ( evaluationQueue.size() > maxEvaluationQueueSize) {
                     try {
+                        evaluationQueue.notifyAll();
                         evaluationQueue.wait(1000L);
                     } catch (InterruptedException e) { e.printStackTrace(); }
                 }
 
-                if ( !evaluationQueue.isEmpty() ) {
-                    MathFunction<V> first = evaluationQueue.peekFirst();
+                for (int i = unflushedFunctionsSz-1 ; i >= 0; i--) {
+                    MathFunction<V> function = unflushedFunctions[i] ;
 
-                    if ( function.compareTo(first) < 0 ) {
-                        evaluationQueue.addFirst(function);
+                    if ( !evaluationQueue.isEmpty() ) {
+                        MathFunction<V> first = evaluationQueue.peekFirst();
+
+                        if ( function.compareTo(first) < 0 ) {
+                            evaluationQueue.addFirst(function);
+                        }
+                        else {
+                            evaluationQueue.addLast(function);
+                        }
                     }
                     else {
                         evaluationQueue.addLast(function);
                     }
                 }
-                else {
-                    evaluationQueue.addLast(function);
-                }
 
                 evaluationQueue.notifyAll();
+            }
+        }
+
+        private int generationQueueSizeSync() {
+            synchronized (generationQueue) {
+                return generationQueueSize();
             }
         }
 
@@ -695,12 +729,24 @@ final public class FunctionSimulation<V extends MathValue> {
             return size;
         }
 
+        private int[] generationQueueSizesSync() {
+            synchronized (generationQueue) {
+                return generationQueueSizes();
+            }
+        }
+
         private int[] generationQueueSizes() {
             int[] sizes = new int[maxOperations] ;
             for (int i = maxOperationsM1; i >= 0; i--) {
                 sizes[i] = generationQueue[i].size() ;
             }
             return sizes;
+        }
+
+        private boolean generationQueueEmptySync() {
+            synchronized (generationQueue) {
+                return generationQueueEmpty();
+            }
         }
 
         private boolean generationQueueEmpty() {
@@ -715,7 +761,7 @@ final public class FunctionSimulation<V extends MathValue> {
 
             int opsIdx = function.getOperationsSize() ;
 
-            synchronized (evaluationQueue) {
+            synchronized (generationQueue) {
                 ArrayDeque<MathFunction<V>> queue = generationQueue[opsIdx];
 
                 if ( !queue.isEmpty() ) {
@@ -732,7 +778,7 @@ final public class FunctionSimulation<V extends MathValue> {
                     queue.addLast(function);
                 }
 
-                evaluationQueue.notifyAll();
+                generationQueue.notifyAll();
             }
         }
 
@@ -773,11 +819,16 @@ final public class FunctionSimulation<V extends MathValue> {
         }
 
         private void processEvaluationQueueLoop() {
-            while (true) {
-                MathFunction<V> function = consumeEvaluationQueue();
+            MathFunction<V>[] functionsBuffer = new MathFunction[ functionSimulation.getSimulationThreads()*2 ] ;
 
-                if (function != null) {
-                    evaluateFunction(function);
+            while (true) {
+                int functionsBufferSz = consumeEvaluationQueue(functionsBuffer);
+
+                if (functionsBufferSz > 0) {
+                    for (int i = 0; i < functionsBufferSz; i++) {
+                        MathFunction<V> function = functionsBuffer[i];
+                        evaluateFunction(function);
+                    }
                 }
                 else {
                     synchronized (evaluationQueue) {
@@ -795,14 +846,14 @@ final public class FunctionSimulation<V extends MathValue> {
                     functionSimulation.generateOperations(this, function);
                 }
                 else {
-                    synchronized (evaluationQueue) {
+                    synchronized (generationQueue) {
                         if (generationQueueEmpty() && !running) break;
                     }
                 }
             }
         }
 
-        private MathFunction<V> consumeEvaluationQueue() {
+        private int consumeEvaluationQueue(MathFunction<V>[] returnFunctions) {
             synchronized (evaluationQueue) {
                 while (evaluationQueue.isEmpty() && running) {
                     try {
@@ -810,20 +861,32 @@ final public class FunctionSimulation<V extends MathValue> {
                     } catch (InterruptedException e) { e.printStackTrace(); }
                 }
 
-                if (evaluationQueue.isEmpty()) return null;
+                boolean overMax = evaluationQueue.size() > maxEvaluationQueueSize;
 
-                if (evaluationQueue.size() < MAX_QUEUE_SIZE) evaluationQueue.notifyAll();
+                int returnFunctionsSz = 0 ;
 
-                boolean consumeFromEnd = evaluationQueue.size() % 2 == 0 ;
-                return consumeFromEnd ? evaluationQueue.pollLast() : evaluationQueue.pollFirst() ;
+                for (int i = returnFunctions.length-1; i >= 0; i--) {
+                    boolean consumeFromEnd = evaluationQueue.size() % 2 == 0 ;
+                    MathFunction<V> function = consumeFromEnd ? evaluationQueue.pollLast() : evaluationQueue.pollFirst() ;
+
+                    if (function == null) break; ;
+
+                    returnFunctions[returnFunctionsSz++] = function ;
+                }
+
+                if ( overMax && evaluationQueue.size() < maxEvaluationQueueSize) {
+                    evaluationQueue.notifyAll();
+                }
+
+                return returnFunctionsSz ;
             }
         }
 
         private MathFunction<V> consumeGenerationQueue() {
-            synchronized (evaluationQueue) {
+            synchronized (generationQueue) {
                 while (generationQueueEmpty() && running) {
                     try {
-                        evaluationQueue.wait(1000L*10);
+                        generationQueue.wait(1000L*10);
                     } catch (InterruptedException e) { e.printStackTrace(); }
                 }
 
