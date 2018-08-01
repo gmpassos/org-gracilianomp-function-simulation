@@ -424,7 +424,7 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
             s.append(i);
             s.append("] ");
 
-            s.append(operation);
+            s.append( operation.toString(this) );
             s.append("\n");
         }
 
@@ -433,7 +433,7 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
             s.append(operations.length);
             s.append("] ");
 
-            s.append(operationsExtra);
+            s.append( operationsExtra.toString(this) );
             s.append("\n");
         }
 

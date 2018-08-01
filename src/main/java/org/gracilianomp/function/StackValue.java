@@ -83,4 +83,13 @@ final public class StackValue implements Comparable<StackValue> {
 
                 ')';
     }
+
+    public <V extends MathValue> String toString( MathFunction<V> function ) {
+        return "(" +
+                stackType +
+                "#" + stackIndex +
+                (valueIndex < 0 ? "" : "," + valueIndex ) +
+                ": " + getStackValue(function) +
+                ')';
+    }
 }

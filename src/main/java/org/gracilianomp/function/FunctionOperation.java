@@ -114,4 +114,22 @@ final public class FunctionOperation {
                     '}';
         }
     }
+
+    public <V extends MathValue> String toString( MathFunction<V> function ) {
+        if ( arithmeticOperation.isSingleValue() ) {
+            return "{" +
+                    arithmeticOperation +
+                    ", " + valueA.toString(function) +
+                    '}';
+        }
+        else {
+            return "{" +
+                    arithmeticOperation +
+                    ", " + valueA.toString(function) +
+                    ", " + valueB.toString(function) +
+                    '}';
+        }
+    }
+
+
 }
