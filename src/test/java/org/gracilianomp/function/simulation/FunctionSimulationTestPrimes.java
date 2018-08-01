@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 @Ignore
 public class FunctionSimulationTestPrimes {
@@ -22,38 +23,61 @@ public class FunctionSimulationTestPrimes {
 
     static final private ArithmeticUnitFast au = ArithmeticUnitFast.instance;
 
-    static final private int[][] PRIMES_COUNT_GENERATED = generatePrimesCount(100000) ;
+    static final private int[][] PRIMES_COUNT_GENERATED = generatePrimesCount(100000000, 0.90) ;
     static final private boolean GENERATE_NON_PRIMES = false ;
 
     static final private int[][] PRIMES_COUNT = PRIMES_COUNT_GENERATED;
 
-    private static int[][] generatePrimesCount(int limit) {
+    private static int[][] generatePrimesCount(int limit, double skipRatio) {
+
+        PrimeUtils.expandBasicPrimes( limit ) ;
+
+        System.out.println("-- Generating primes count samples...");
+
         ArrayList<int[]> list = new ArrayList<>();
 
         int prevCount = 0 ;
         int prevP = 2 ;
 
         int primesCount = 0 ;
+
+        Random random = new Random(123);
+
+        int skipCount = 0 ;
+
         for (int p = 2; p < limit; p = PrimeUtils.nextPrime(p)) {
 
             if (GENERATE_NON_PRIMES) {
                 for (int n = prevP + 1; n < p; n++) {
-                    list.add(new int[]{n, prevCount});
+                    if ( random.nextFloat() > skipRatio ) {
+                        list.add(new int[]{n, prevCount});
+                    }
+                    else {
+                        skipCount++;
+                    }
                 }
             }
 
             primesCount++ ;
 
-            int count = primesCount ;//PrimeUtils.countPrimesInRange(2,p) ;
+            int count = primesCount ;
 
-            list.add( new int[] { p , count } ) ;
+            if ( random.nextFloat() > skipRatio ) {
+                list.add(new int[]{p, count});
+            }
+            else {
+                skipCount++;
+            }
 
             prevCount = count ;
             prevP = p ;
         }
 
         System.out.println("---------------------------------------------");
-        System.out.println("PRIMES_COUNT: "+ list.size());
+
+        int totalSize = list.size() + skipCount ;
+
+        System.out.println("PRIMES_COUNT: size: "+ list.size() +"/"+ totalSize +" ; skipCount: "+ skipCount +" ; "+ ( (skipCount*1d) / totalSize ));
 
         int[][] allGMPErrors = new int[6][list.size()] ;
 
@@ -92,6 +116,8 @@ public class FunctionSimulationTestPrimes {
         }
 
         System.out.println("---------------------------------------------");
+
+        System.out.println("PRIMES_COUNT: size: "+ list.size() +"/"+ totalSize +" ; skipCount: "+ skipCount +" ; "+ (1-((skipCount*1d)/totalSize)) );
 
         calcPrimesCountGMP4(887);
 
@@ -267,13 +293,15 @@ f [5] {DIVIDE, (INPUT, 0), (RUNTIME, 4)}
         MathStack<MathValueFast> globalStack = new MathStack<>(StackType.GLOBAL, true);
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(1)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(2)) );
-        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(5)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(3)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(5)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(7)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E/2)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E*2)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI)) );
-        //globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI)) );
-        //globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI/2)) );
-        //globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI/2)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI*2)) );
 
 
         MathStack<MathValueFast> inputStack = new MathStack<>(StackType.INPUT, true);
