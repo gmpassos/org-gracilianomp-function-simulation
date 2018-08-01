@@ -701,7 +701,7 @@ final public class FunctionSimulation<V extends MathValue> {
                     if ( !evaluationQueue.isEmpty() ) {
                         MathFunction<V> first = evaluationQueue.peekFirst();
 
-                        if ( function.compareTo(first) < 0 ) {
+                        if ( function.isBetter(first) ) {
                             evaluationQueue.addFirst(function);
                         }
                         else {
