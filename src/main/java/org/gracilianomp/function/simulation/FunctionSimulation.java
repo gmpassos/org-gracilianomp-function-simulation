@@ -160,7 +160,9 @@ final public class FunctionSimulation<V extends MathValue> {
             System.out.println("-------------------------------------------------------------------------------------");
             System.out.println("EXTRA FUNCTIONS:");
 
-            for (int i = 0; i < extraFunctions.length; i++) {
+            int limit = Math.min(extraFunctions.length, 100) ;
+
+            for (int i = 0; i < limit; i++) {
                 MathFunction<V> extraFunction = extraFunctions[i];
                 MathObject<V> extraTarget = extraTargets[i];
 
