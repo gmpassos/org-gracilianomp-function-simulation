@@ -66,6 +66,71 @@ public class MathObjectFastTest {
 
         assertEquals(true, 3 , obj_One_Two.collectionSum()) ;
         assertEquals(true, 1, 1.5 , obj_One_Two.collectionAverage()) ;
+
+    }
+
+    @Test
+    public void testCollection2() {
+
+        MathObjectCollection<MathValueFast> obj_One_Two = new MathObjectCollection<>(au, MathValueFast.ONE, MathValueFast.TWO);
+        MathObjectCollection<MathValueFast> obj_Two_Three = new MathObjectCollection<>(au, MathValueFast.TWO, MathValueFast.THREE);
+
+        assertEquals(new long[] {2, 3, 3, 4} , obj_One_Two.sum(obj_One_Two)) ;
+        assertEquals(new long[] {3, 4, 4, 5} , obj_One_Two.sum(obj_Two_Three)) ;
+
+        assertEquals(new long[] {1, 2, 2, 4} , obj_One_Two.multiply(obj_One_Two)) ;
+        assertEquals(new long[] {2, 3, 4, 6} , obj_One_Two.multiply(obj_Two_Three)) ;
+
+    }
+
+    @Test
+    public void testCollection3() {
+
+        MathObjectCollection<MathValueFast> obj_One_Two = new MathObjectCollection<>(au, MathValueFast.ONE, MathValueFast.TWO);
+        MathObjectCollection<MathValueFast> obj_Two_Three = new MathObjectCollection<>(au, MathValueFast.TWO, MathValueFast.THREE);
+
+        assertEquals(new long[] {3, 4} , ArithmeticUnitFast.TWO.sum(obj_One_Two)) ;
+        assertEquals(new long[] {4, 5} , ArithmeticUnitFast.TWO.sum(obj_Two_Three)) ;
+
+        assertEquals(new long[] {2, 4} , ArithmeticUnitFast.TWO.multiply(obj_One_Two)) ;
+        assertEquals(new long[] {4, 6} , ArithmeticUnitFast.TWO.multiply(obj_Two_Three)) ;
+
+        assertEquals(new long[] { (long)Math.log(2) }, new double[] { Math.log(2) } , ArithmeticUnitFast.TWO.log()) ;
+
+        assertEquals(new long[] { (long)Math.log(2) , (long)Math.log(3) }, new double[] { Math.log(2) , Math.log(3) } , obj_Two_Three.log()) ;
+
+    }
+
+    @Test
+    public void testCalcOutputSize() {
+
+        MathObjectCollection<MathValueFast> obj_One_Two = new MathObjectCollection<>(au, MathValueFast.ONE, MathValueFast.TWO);
+        MathObjectSingleton<MathValueFast> obj_Two = new MathObjectSingleton<>(au, MathValueFast.TWO);
+
+        for (ArithmeticOperation op : ArithmeticOperation.values()) {
+            if ( op.isSingleValue() ) continue;
+
+            Assert.assertEquals(2 , obj_One_Two.calcOutputSize(op, obj_Two) );
+            Assert.assertEquals(4 , obj_One_Two.calcOutputSize(op, obj_One_Two) );
+
+            Assert.assertEquals(1 , obj_Two.calcOutputSize(op, obj_Two) );
+            Assert.assertEquals(2 , obj_Two.calcOutputSize(op, obj_One_Two) );
+        }
+
+        for (ArithmeticOperation op : ArithmeticOperation.values()) {
+            if ( !op.isSingleValue() || op.isCollection() ) continue;
+
+            Assert.assertEquals(2 , obj_One_Two.calcOutputSize(op, null) );
+            Assert.assertEquals(1 , obj_Two.calcOutputSize(op, null) );
+        }
+
+        for (ArithmeticOperation op : ArithmeticOperation.values()) {
+            if ( !op.isCollection() ) continue;
+
+            Assert.assertEquals(1 , obj_One_Two.calcOutputSize(op, null) );
+            Assert.assertEquals(1 , obj_Two.calcOutputSize(op, null) );
+        }
+
     }
 
     private void assertEquals(boolean singleton, long expcectedInt, MathObject<MathValueFast> val) {
@@ -93,19 +158,19 @@ public class MathObjectFastTest {
 
     }
 
-    private void assertEquals(long[] expcectedInts, MathObject<MathValueFast> val) {
-        double[]expcectedDecs = new double[expcectedInts.length] ;
+    private void assertEquals(long[] expectedInts, MathObject<MathValueFast> val) {
+        double[]expcectedDecs = new double[expectedInts.length] ;
 
         for (int i = 0; i < expcectedDecs.length; i++) {
-            expcectedDecs[i] = expcectedInts[i] ;
+            expcectedDecs[i] = expectedInts[i] ;
         }
 
-        assertEquals(expcectedInts, expcectedDecs, val);
+        assertEquals(expectedInts, expcectedDecs, val);
     }
 
-    private void assertEquals(long[] expcectedInts, double[] expcectedDecs, MathObject<MathValueFast> val) {
+    private void assertEquals(long[] expectedInts, double[] expectedDecs, MathObject<MathValueFast> val) {
         if (val.isSingleton()) {
-            assertEquals(true , expcectedInts[0], expcectedDecs[0], val) ;
+            assertEquals(true , expectedInts[0], expectedDecs[0], val) ;
             return ;
         }
 
@@ -113,18 +178,18 @@ public class MathObjectFastTest {
 
         MathValueFast[] values = valCol.getValues();
 
-        Assert.assertEquals( expcectedInts.length , expcectedDecs.length );
+        Assert.assertEquals( expectedInts.length , expectedDecs.length );
 
-        Assert.assertEquals( expcectedInts.length , values.length );
+        Assert.assertEquals( expectedInts.length , values.length );
 
         for (int i = 0; i < values.length; i++) {
             MathValueFast value = values[i];
 
-            long expcectedInt = expcectedInts[i] ;
-            double expcectedDec = expcectedDecs[i] ;
+            long expectedInt = expectedInts[i] ;
+            double expectedDec = expectedDecs[i] ;
 
-            Assert.assertEquals( expcectedInt , value.getValueInteger() );
-            Assert.assertEquals( expcectedDec , value.getValueDecimal() , 0.0000001 );
+            Assert.assertEquals(expectedInt, value.getValueInteger() );
+            Assert.assertEquals(expectedDec, value.getValueDecimal() , 0.0000001 );
         }
 
     }

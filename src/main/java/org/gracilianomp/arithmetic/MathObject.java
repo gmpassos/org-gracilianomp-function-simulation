@@ -144,9 +144,22 @@ abstract public class MathObject<V extends MathValue> {
         }
         else {
             ArithmeticUnit<V> au = getArithmeticUnit();
-            V aValue = a.getValue();
-            V res = op.calc(au, aValue, null);
-            return new MathObjectSingleton<>(au, res) ;
+
+            if ( a.isSingleton() ) {
+                V aValue = a.getValue();
+                V res = op.calc(au, aValue, null);
+                return new MathObjectSingleton<>(au, res) ;
+            }
+            else {
+                V[] aValues = a.getValues();
+                V[] resValues = au.newValuesArray(aValues.length);
+                for (int i = 0; i < aValues.length; i++) {
+                    V v = aValues[i];
+                    V res = op.calc(au, v, null);
+                    resValues[i] = res ;
+                }
+                return new MathObjectCollection<>(au, resValues) ;
+            }
         }
     }
 
@@ -219,6 +232,43 @@ abstract public class MathObject<V extends MathValue> {
         }
 
         return new MathObjectCollection<>(au, resValues) ;
+    }
+
+    ///////////////////////////////////////////////////////////////
+
+    public int calcOutputSize(ArithmeticOperation op, MathObject<V> o) {
+        if (op.isSingleValue()) {
+            return calcOutputSizeSingleValue(op, this);
+        }
+
+        return calcOutputSizeImpl(op, o);
+    }
+
+    public int calcOutputSizeSingleValue(ArithmeticOperation op, MathObject<V> a) {
+        if (op.isCollection()) {
+            return 1 ;
+        }
+        else {
+            return a.size() ;
+        }
+    }
+
+    protected int calcOutputSizeImpl(ArithmeticOperation op, MathObject<V> o) {
+        boolean thisSingleton = this.isSingleton();
+        boolean oSingleton = o.isSingleton();
+
+        if ( thisSingleton && oSingleton ) {
+            return 1 ;
+        }
+        else if ( thisSingleton ) {
+            return o.size() ;
+        }
+        else if ( oSingleton ) {
+            return this.size() ;
+        }
+        else {
+            return this.size() * o.size() ;
+        }
     }
 
     ///////////////////////////////////////////////////////////////
