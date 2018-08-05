@@ -74,10 +74,22 @@ final public class FunctionOperation {
         return valueB != null ;
     }
 
-    public boolean hasValueFromStackType(StackType stackType ) {
+    public boolean hasValueFromStackType(StackType stackType) {
         if ( valueA.getStackType() == stackType ) return true ;
         if ( hasValueB() && valueB.getStackType() == stackType ) return true ;
         return false ;
+    }
+
+    public <V extends MathValue> int calcOutputSize(MathFunction<V> function) {
+        MathObject<V> valueA = getStackValueA(function);
+
+        if ( hasValueB() ) {
+            MathObject<V> valueB = getStackValueB(function);
+            return valueA.calcOutputSize( this.arithmeticOperation , valueB ) ;
+        }
+        else {
+            return valueA.calcOutputSizeSingleValue( this.arithmeticOperation , valueA ) ;
+        }
     }
 
     @Override
