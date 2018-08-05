@@ -461,6 +461,9 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
             s.append("] ");
 
             s.append( operation.toString(this) );
+
+            if (!isUsedOperation(i)) s.append(" !");
+
             s.append("\n");
         }
 
