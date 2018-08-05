@@ -325,6 +325,25 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         return d1 ;
     }
 
+    public boolean isUsedOperation(int opIdx) {
+        int operationsSize = getOperationsSize();
+
+        if (opIdx >= operationsSize) throw new IllegalArgumentException("Invalid operator index: opIdx:"+ opIdx +" > operationsSize:"+ operationsSize);
+
+        if (opIdx == operationsSize-1) return true ;
+
+        if ( operationsSize < 64 ) {
+            long usedOperations = calcUsedOperationsBits();
+            long opBit = 1L << opIdx ;
+            long mask = usedOperations & opBit;
+            return mask != 0 ;
+        }
+        else {
+            boolean[] usedOperations = calcUsedOperationsArray();
+            return usedOperations[opIdx] ;
+        }
+    }
+
     public boolean hasUnusedOperation() {
         int operationsSize = getOperationsSize();
         if ( operationsSize < 64 ) {

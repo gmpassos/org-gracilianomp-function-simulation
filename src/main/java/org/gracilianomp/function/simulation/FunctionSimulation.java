@@ -558,7 +558,7 @@ final public class FunctionSimulation<V extends MathValue> {
     }
 
     final static private class FunctionFinder<V extends MathValue> {
-        static final private int VERBOSE_INTERVAL = 100000 ;
+        static final private int VERBOSE_INTERVAL = 1000000 ;
 
         final private int maxEvaluationQueueSize ;
 

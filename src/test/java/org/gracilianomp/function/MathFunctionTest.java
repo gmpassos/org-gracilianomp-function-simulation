@@ -38,6 +38,12 @@ public class MathFunctionTest {
 
         Assert.assertFalse( mathFunction.hasUnusedOperation() );
 
+        Assert.assertEquals( 4 , mathFunction.getOperationsSize() );
+
+        for (int i = 0; i < mathFunction.getOperationsSize() ; i++) {
+            Assert.assertTrue( mathFunction.isUsedOperation(i) );
+        }
+
     }
 
 
@@ -66,6 +72,17 @@ public class MathFunctionTest {
         Assert.assertEquals( 5L , result.getValue().getValueInteger() );
 
         Assert.assertTrue( mathFunction.hasUnusedOperation() );
+
+        Assert.assertEquals( 5 , mathFunction.getOperationsSize() );
+
+        for (int i = 0; i < mathFunction.getOperationsSize() ; i++) {
+            if (i == 0) {
+                Assert.assertFalse( mathFunction.isUsedOperation(i) );
+            }
+            else {
+                Assert.assertTrue( mathFunction.isUsedOperation(i) );
+            }
+        }
 
     }
 
