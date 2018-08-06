@@ -438,6 +438,14 @@ final public class FunctionSimulation<V extends MathValue> {
         boolean hasTemplateOperations = templateOperations != null ;
         boolean alwaysGenerateWithTemplateOperations = this.alwaysGenerateWithTemplateOperations && hasTemplateOperations ;
 
+        if (hasTemplateOperations) {
+            for (FunctionOperation functionOperation : templateOperations.getOperations()) {
+                if ( !uniqueOperations.containsKey(functionOperation) ) {
+                    uniqueOperations.put(functionOperation, Boolean.TRUE);
+                }
+            }
+        }
+
         long immutableGenerationID = 0 ;
         long runtimeGenerationID = 0 ;
 
