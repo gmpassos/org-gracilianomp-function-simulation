@@ -23,7 +23,7 @@ public class FunctionSimulationTestPrimes {
 
     static final private ArithmeticUnitFast au = ArithmeticUnitFast.instance;
 
-    static final private int[][] PRIMES_COUNT_GENERATED = generatePrimesCount(100000000, 0.90) ;
+    static final private int[][] PRIMES_COUNT_GENERATED = generatePrimesCount(100000000, 0.80) ;
     static final private boolean GENERATE_NON_PRIMES = false ;
 
     static final private int[][] PRIMES_COUNT = PRIMES_COUNT_GENERATED;
@@ -49,7 +49,7 @@ public class FunctionSimulationTestPrimes {
 
             if (GENERATE_NON_PRIMES) {
                 for (int n = prevP + 1; n < p; n++) {
-                    if ( random.nextFloat() > skipRatio ) {
+                    if ( p < 100 || random.nextFloat() > skipRatio ) {
                         list.add(new int[]{n, prevCount});
                     }
                     else {
@@ -62,7 +62,7 @@ public class FunctionSimulationTestPrimes {
 
             int count = primesCount ;
 
-            if ( random.nextFloat() > skipRatio ) {
+            if ( p < 100 || random.nextFloat() > skipRatio ) {
                 list.add(new int[]{p, count});
             }
             else {
@@ -79,7 +79,9 @@ public class FunctionSimulationTestPrimes {
 
         System.out.println("PRIMES_COUNT: size: "+ list.size() +"/"+ totalSize +" ; skipCount: "+ skipCount +" ; "+ ( (skipCount*1d) / totalSize ));
 
-        int[][] allGMPErrors = new int[6][list.size()] ;
+        int[][] allGMPErrors = new int[9][list.size()] ;
+
+        int printCount = 0 ;
 
         for (int i = 0; i < list.size(); i++) {
             int[] ab = list.get(i) ;
@@ -90,12 +92,15 @@ public class FunctionSimulationTestPrimes {
             int c1 = calcPrimesCountClassic(n);
 
             double[] cGMP = new double[] {
+                    calcPrimesCountClassic(n),
                     calcPrimesCountGMP1(n),
                     calcPrimesCountGMP3(n),
                     calcPrimesCountGMP4(n),
                     calcPrimesCountGMP5(n),
                     calcPrimesCountGMP6(n),
                     calcPrimesCountGMP7(n),
+                    calcPrimesCountGMP8(n),
+                    calcPrimesCountGMP10(n),
                     //calcPrimesCountGMPFix(n),
             } ;
 
@@ -110,7 +115,8 @@ public class FunctionSimulationTestPrimes {
                 allGMPErrors[j][i] = err ;
             }
 
-            if ( PrimeUtils.isPrime(n) ) {
+            if ( printCount < 1000 && PrimeUtils.isPrime(n) ) {
+                printCount++ ;
                 System.out.println(Arrays.toString(ab) + " > classic: " + c1 + " ; gmp: " + Arrays.toString(toInts(cGMP)) + " > err: " + err1 + " ; errGMP: " + Arrays.toString(errGMP));
             }
         }
@@ -287,19 +293,64 @@ f [5] {DIVIDE, (INPUT, 0), (RUNTIME, 4)}
     }
 
 
+    private static double calcPrimesCountGMP8(int n) {
+        double a = Math.log(n) ;
+        double b = Math.pow( Math.PI , 1/a) ;
+        double c = a-b ;
+        double f = n/c ;
+        return f;
+    }
+
+
+    /*
+--[1000] waitQueueFullyConsumed[simulationThreads: 16]: eval: 102,464 ; gen: 120,324 = [0, 0, 2355, 103404, 13671, 894] > bestFunctionDistance: 696.0233919275925
+
+Operations:
+a [0] {LOG, (INPUT#0: 887)}
+b [1] {LOG, (RUNTIME#0: 6.787844982309579)}
+c [2] {ROOT, (RUNTIME#1: 1.9151335100914084), (RUNTIME#0: 6.787844982309579)}
+d [3] {POWER, (RUNTIME#2: 1.1004597815423836), (RUNTIME#2: 1.1004597815423836)}
+e [4] {SUBTRACT, (RUNTIME#0: 6.787844982309579), (RUNTIME#3: 1.1110937574776176)}
+f [5] {DIVIDE, (INPUT#0: 887), (RUNTIME#4: 5.676751224831961)}
+
+-- evaluateFunction: -1,559,000,000 > function ops: 6/6
+     */
+    private static double calcPrimesCountGMP10(long n) {
+        double a = Math.log(n) ;
+        double b = Math.log(a) ;
+        double c = Math.pow( b , 1/a ) ;
+        double d = Math.pow( c , c ) ;
+        double e = a-d ;
+        double f = n/e;
+        double g = f * 0.0002 ;
+        double h = f-g-2;
+        return h;
+    }
+
+
+
     @Test
     public void test1() {
 
         MathStack<MathValueFast> globalStack = new MathStack<>(StackType.GLOBAL, true);
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( Math.PI )) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( Math.sqrt(2))) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( Math.sqrt(3))) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( Math.sqrt(5))) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( Math.sqrt(7))) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( 1.61803398874989484820458683436563811772030917980576286213544862270526046281890 )) ); // Golden ratio
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( 0.577215664901532860606512090082 )) ); //gamma or the Euler-Mascheroni constant
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( 2.6854520010653064453097148354817956938203822939 )) ); // Khinchin's constant K
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal( 1.282427129100622636875342568869791727767688927325001192 )) ); // Glaisher-Kinkelin constant A
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(1)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(2)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(3)) );
+        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(4)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(5)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastInteger(7)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E/2)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.E*2)) );
-        globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI/2)) );
         globalStack.add( new MathObjectSingleton<>( au , new MathValueFast.MathValueFastDecimal(Math.PI*2)) );
 
@@ -309,6 +360,15 @@ f [5] {DIVIDE, (INPUT, 0), (RUNTIME, 4)}
 
         FunctionOperation[] operations = new FunctionOperation[] {
                 new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.INPUT, 0) , null ) ,
+                new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 0) , null ) ,
+
+                //new FunctionOperation( ArithmeticOperation.ROOT , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 0) ) ,
+                //new FunctionOperation( ArithmeticOperation.POWER , new StackValue(StackType.RUNTIME, 2) , new StackValue(StackType.RUNTIME, 2) ) ,
+
+                //new FunctionOperation( ArithmeticOperation.SUBTRACT , new StackValue(StackType.RUNTIME, 0) , new StackValue(StackType.RUNTIME, 1) ) ,
+                //new FunctionOperation( ArithmeticOperation.DIVIDE , new StackValue(StackType.INPUT, 0) , new StackValue(StackType.RUNTIME, 2) ) ,
+
+
                 //new FunctionOperation( ArithmeticOperation.DIVIDE , new StackValue(StackType.INPUT, 0) , new StackValue(StackType.RUNTIME, 0) ) ,
 
                 //new FunctionOperation( ArithmeticOperation.ROOT , new StackValue(StackType.RUNTIME, 0) , new StackValue(StackType.GLOBAL, 1) ) ,
@@ -331,6 +391,11 @@ f [5] {DIVIDE, (INPUT, 0), (RUNTIME, 4)}
         MathFunction<MathValueFast> mathFunction = new MathFunction<>(globalStack, inputStack, operations);
 
         FunctionSimulation<MathValueFast> functionSimulation = new FunctionSimulation<>(mathFunction, targetObject, 0.0, 6, 0.0);
+
+        functionSimulation.setAlwaysGenerateWithTemplateOperations(true);
+        functionSimulation.setTemplateOperations(
+                new FunctionOperation( ArithmeticOperation.DIVIDE , new StackValue(StackType.INPUT, 0) , new StackValue(StackType.RUNTIME, 4) )
+        );
 
         setExtraTargets(functionSimulation);
 
