@@ -84,6 +84,47 @@ public class MathFunctionTest {
             }
         }
 
+        Assert.assertTrue( mathFunction.existsStackValue(new StackValue(StackType.RUNTIME, 3)) );
+        Assert.assertTrue( mathFunction.existsStackValue(new StackValue(StackType.RUNTIME, 4)) );
+        Assert.assertFalse( mathFunction.existsStackValue(new StackValue(StackType.RUNTIME, 5)) );
+
+        Assert.assertTrue( mathFunction.existsStackValue(new StackValue(StackType.RUNTIME, 5) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 2) ) ) );
+        Assert.assertFalse( mathFunction.existsStackValue(new StackValue(StackType.RUNTIME, 6) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 2) ) ) );
+
+        Assert.assertTrue( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 2) ) ) );
+        Assert.assertTrue( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 4) ) ) );
+        Assert.assertFalse( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 5) ) ) );
+        Assert.assertFalse( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 5) , new StackValue(StackType.RUNTIME, 4) ) ) );
+        Assert.assertFalse( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 1) , new StackValue(StackType.RUNTIME, 6) ) ) );
+
+        Assert.assertTrue( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 1) , null ) ) );
+        Assert.assertTrue( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 4) , null ) ) );
+        Assert.assertFalse( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 5) , null ) ) );
+        Assert.assertFalse( mathFunction.existsOperationStackValues( new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 6) , null ) ) );
+
+        Assert.assertEquals( 2 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) } ).length );
+        Assert.assertEquals( 1 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 5)) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) } ).length );
+        Assert.assertEquals( 1 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 6)) } ).length );
+
+        Assert.assertEquals( 2 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) , new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 4)  , null) } ).length );
+        Assert.assertEquals( 1 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 4)  , null) , new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 6)  , null) } ).length );
+        Assert.assertEquals( 0 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 5)  , null) , new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 6)  , null) } ).length );
+
+
+        Assert.assertEquals( 2 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) } , new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) ).length );
+        Assert.assertEquals( 2 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 5)  , new StackValue(StackType.RUNTIME, 4)) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) } , new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) ).length );
+        Assert.assertEquals( 1 , mathFunction.filterValidOperations( new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 6)  , new StackValue(StackType.RUNTIME, 4)) , new FunctionOperation( ArithmeticOperation.SUM , new StackValue(StackType.RUNTIME, 3)  , new StackValue(StackType.RUNTIME, 4)) } , new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) ).length );
+
+
+        Assert.assertEquals( 6 , mathFunction.copy(new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null)).getOperationsSize() ) ;
+        Assert.assertEquals( 7 , mathFunction.copy(new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) , new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3) , null)  } ).getOperationsSize() ) ;
+        Assert.assertEquals( 7 , mathFunction.copy(new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) , new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 5) , null)  } ).getOperationsSize() ) ;
+        Assert.assertEquals( 6 , mathFunction.copy(new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) , new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 6) , null)  } ).getOperationsSize() ) ;
+        Assert.assertEquals( 6 , mathFunction.copy(new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 3)  , null) , new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 8) , null)  } ).getOperationsSize() ) ;
+
+        Assert.assertEquals( 6 , mathFunction.copy(null , new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 4) , null)  } ).getOperationsSize() ) ;
+        Assert.assertEquals( 5 , mathFunction.copy(null , new FunctionOperation[] { new FunctionOperation( ArithmeticOperation.LOG , new StackValue(StackType.RUNTIME, 5) , null)  } ).getOperationsSize() ) ;
+
     }
 
     @Test

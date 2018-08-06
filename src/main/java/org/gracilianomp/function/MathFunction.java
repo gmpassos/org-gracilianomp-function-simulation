@@ -62,6 +62,112 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         return copy;
     }
 
+    public MathFunction<V> copy(FunctionOperation extraOperation, FunctionOperation[] templateOperations) {
+        FunctionOperation[] validTemplateOps = filterValidOperations(templateOperations, extraOperation);
+
+        if ( validTemplateOps.length == 0 ) {
+            return copy(extraOperation) ;
+        }
+
+        FunctionOperation[] allOperations = getAllOperations();
+
+        int operationsCopySize = allOperations.length + templateOperations.length ;
+        FunctionOperation[] operationsCopy ;
+
+        if (extraOperation != null) {
+            operationsCopySize++ ;
+
+            operationsCopy = new FunctionOperation[operationsCopySize] ;
+            System.arraycopy(allOperations, 0, operationsCopy, 0, allOperations.length);
+            operationsCopy[allOperations.length] = extraOperation ;
+            System.arraycopy(validTemplateOps, 0, operationsCopy, allOperations.length+1, validTemplateOps.length);
+        }
+        else {
+            operationsCopy = new FunctionOperation[operationsCopySize] ;
+            System.arraycopy(allOperations, 0, operationsCopy, 0, allOperations.length);
+            System.arraycopy(validTemplateOps, 0, operationsCopy, allOperations.length, validTemplateOps.length);
+        }
+
+        MathFunction<V> copy = new MathFunction<V>(globalStack, inputStack, runtimeStack.copy(), executedOperations, operationsCopy, null);
+        return copy;
+    }
+
+    public FunctionOperation[] filterValidOperations(FunctionOperation[] operations) {
+        return filterValidOperations(operations , null);
+    }
+
+    public FunctionOperation[] filterValidOperations(FunctionOperation[] operations, FunctionOperation extraOperation) {
+        FunctionOperation[] operationsOk = new FunctionOperation[ operations.length ] ;
+        int operationsOkSz = 0 ;
+
+        for (int i = 0; i < operations.length; i++) {
+            FunctionOperation op = operations[i];
+            if ( existsOperationStackValues(op, extraOperation) ) {
+                operationsOk[operationsOkSz++] = op ;
+            }
+        }
+
+        if ( operationsOkSz < operationsOk.length ) {
+            operationsOk = Arrays.copyOf(operationsOk, operationsOkSz) ;
+        }
+
+        return operationsOk ;
+    }
+
+    public boolean existsOperationStackValues(FunctionOperation operation, FunctionOperation extraOperation) {
+        StackValue valueA = operation.getValueA();
+
+        if ( !existsStackValue(valueA, extraOperation) ) return false ;
+
+        StackValue valueB = operation.getValueB();
+        return valueB == null || existsStackValue(valueB, extraOperation) ;
+    }
+
+    public boolean existsOperationStackValues(FunctionOperation operation) {
+        StackValue valueA = operation.getValueA();
+
+        if ( !existsStackValue(valueA) ) return false ;
+
+        StackValue valueB = operation.getValueB();
+        return valueB == null || existsStackValue(valueB) ;
+    }
+
+    public boolean existsStackValue(StackValue stackValue, FunctionOperation extraOperation) {
+        if ( existsStackValue(stackValue) ) return true ;
+
+        if (extraOperation == null) return false ;
+
+        StackType stackType = stackValue.getStackType();
+        if ( stackType != StackType.RUNTIME ) return false ;
+
+        MathStack<V> runtimeStack = this.getRuntimeStack();
+
+        int stackIndex = stackValue.getStackIndex();
+
+        if ( stackIndex == runtimeStack.size() ) {
+            int valueIndex = stackValue.getValueIndex();
+            if (valueIndex <= 0) return true ;
+
+            return valueIndex < extraOperation.calcOutputSize(this) ;
+        }
+
+        return false ;
+    }
+
+    public boolean existsStackValue(StackValue stackValue) {
+        StackType stackType = stackValue.getStackType();
+        MathStack<V> stack = stackType.getStack(this);
+
+        int stackIndex = stackValue.getStackIndex();
+        if ( stackIndex >= stack.size() ) return false ;
+
+        int valueIndex = stackValue.getValueIndex();
+        if (valueIndex <= 0) return true ;
+
+        MathObject<V> mathObject = stack.get(stackIndex);
+        return valueIndex < mathObject.size()  ;
+    }
+
     public FunctionOperation[] getOperations() {
         return getAllOperations().clone();
     }
