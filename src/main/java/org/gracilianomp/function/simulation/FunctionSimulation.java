@@ -120,14 +120,14 @@ final public class FunctionSimulation<V extends MathValue> {
         this.alwaysGenerateWithTemplateOperations = alwaysGenerateWithTemplateOperations;
     }
 
-    private FunctionOperation[] templateOperations ;
+    private TemplateOperations templateOperations ;
 
     public void setTemplateOperations(FunctionOperation... templateOperations) {
-        this.templateOperations = templateOperations != null && templateOperations.length > 0 ? templateOperations : null ;
+        this.templateOperations = templateOperations != null && templateOperations.length > 0 ? new TemplateOperations(templateOperations) : null ;
     }
 
     public FunctionOperation[] getTemplateOperations() {
-        return templateOperations;
+        return templateOperations != null ? templateOperations.getOperations() : null ;
     }
 
     public MathFunction<V> findFunctionWithRetries(int maxRetries) {
@@ -433,7 +433,7 @@ final public class FunctionSimulation<V extends MathValue> {
         }
 
         ArithmeticOperation[] enabledOperations = this.enabledOperations;
-        FunctionOperation[] templateOperations = this.templateOperations;
+        TemplateOperations templateOperations = this.templateOperations ;
 
         boolean hasTemplateOperations = templateOperations != null ;
         boolean alwaysGenerateWithTemplateOperations = this.alwaysGenerateWithTemplateOperations && hasTemplateOperations ;

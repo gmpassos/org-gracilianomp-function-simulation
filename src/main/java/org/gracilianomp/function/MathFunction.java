@@ -62,6 +62,14 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         return copy;
     }
 
+    public MathFunction<V> copy(FunctionOperation extraOperation, TemplateOperations templateOperations) {
+        if ( templateOperations.minRuntimeStackIdx >= runtimeStack.size() ) {
+            return copy(extraOperation) ;
+        }
+
+        return copy(extraOperation, templateOperations.operations);
+    }
+
     public MathFunction<V> copy(FunctionOperation extraOperation, FunctionOperation[] templateOperations) {
         FunctionOperation[] validTemplateOps = filterValidOperations(templateOperations, extraOperation);
 
@@ -69,6 +77,10 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
             return copy(extraOperation) ;
         }
 
+        return copyWithTemplateOperations(extraOperation, validTemplateOps);
+    }
+
+    private MathFunction<V> copyWithTemplateOperations(FunctionOperation extraOperation, FunctionOperation[] validTemplateOps) {
         FunctionOperation[] allOperations = getAllOperations();
 
         int operationsCopySize = allOperations.length + validTemplateOps.length ;
