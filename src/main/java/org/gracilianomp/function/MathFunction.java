@@ -71,19 +71,20 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
 
         FunctionOperation[] allOperations = getAllOperations();
 
-        int operationsCopySize = allOperations.length + templateOperations.length ;
+        int operationsCopySize = allOperations.length + validTemplateOps.length ;
         FunctionOperation[] operationsCopy ;
 
         if (extraOperation != null) {
             operationsCopySize++ ;
-
             operationsCopy = new FunctionOperation[operationsCopySize] ;
+
             System.arraycopy(allOperations, 0, operationsCopy, 0, allOperations.length);
             operationsCopy[allOperations.length] = extraOperation ;
             System.arraycopy(validTemplateOps, 0, operationsCopy, allOperations.length+1, validTemplateOps.length);
         }
         else {
             operationsCopy = new FunctionOperation[operationsCopySize] ;
+
             System.arraycopy(allOperations, 0, operationsCopy, 0, allOperations.length);
             System.arraycopy(validTemplateOps, 0, operationsCopy, allOperations.length, validTemplateOps.length);
         }
@@ -393,7 +394,7 @@ final public class MathFunction<V extends MathValue> implements Comparable<MathF
         MathObject<V> vA = operation.getStackValueA(this) ;
         MathObject<V> vB = operation.getStackValueB(this) ;
 
-        MathObject<V> res = vA.calc(operation.getArithmeticOperation(), vB);
+        MathObject<V> res = vA.calc(operation.arithmeticOperation, vB);
         return res ;
     }
 

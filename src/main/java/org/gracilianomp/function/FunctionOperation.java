@@ -8,7 +8,7 @@ import java.util.Objects;
 
 final public class FunctionOperation {
     final private long generationID;
-    final private ArithmeticOperation arithmeticOperation ;
+    final protected ArithmeticOperation arithmeticOperation ;
     final private StackValue valueA ;
     final private StackValue valueB ;
 
