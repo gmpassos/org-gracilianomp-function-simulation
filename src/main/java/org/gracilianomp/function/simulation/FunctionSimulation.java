@@ -110,6 +110,26 @@ final public class FunctionSimulation<V extends MathValue> {
         enabledOperations = list.toArray( new ArithmeticOperation[list.size()] ) ;
     }
 
+    private boolean alwaysGenerateWithTemplateOperations = false ;
+
+    public boolean getAlwaysGenerateWithTemplateOperations() {
+        return alwaysGenerateWithTemplateOperations;
+    }
+
+    public void setAlwaysGenerateWithTemplateOperations(boolean alwaysGenerateWithTemplateOperations) {
+        this.alwaysGenerateWithTemplateOperations = alwaysGenerateWithTemplateOperations;
+    }
+
+    private FunctionOperation[] templateOperations ;
+
+    public void setTemplateOperations(FunctionOperation... templateOperations) {
+        this.templateOperations = templateOperations != null && templateOperations.length > 0 ? templateOperations : null ;
+    }
+
+    public FunctionOperation[] getTemplateOperations() {
+        return templateOperations;
+    }
+
     public MathFunction<V> findFunctionWithRetries(int maxRetries) {
         for (int i = 0; i < maxRetries; i++) {
             MathFunction<V> function = findFunction();
@@ -153,6 +173,7 @@ final public class FunctionSimulation<V extends MathValue> {
         System.out.println("-- Result: "+ bestFunction.getResult());
         System.out.println("-- Target: "+ target);
         System.out.println("-- Distance: "+ bestFunctionDistance);
+        System.out.println("-- DistanceMaxError: "+ this.distanceMaxError);
         
         MathFunction<V>[] extraFunctions = getExtraFunctions(bestFunction, false);
 
@@ -160,7 +181,7 @@ final public class FunctionSimulation<V extends MathValue> {
             System.out.println("-------------------------------------------------------------------------------------");
             System.out.println("EXTRA FUNCTIONS:");
 
-            int limit = Math.min(extraFunctions.length, 100) ;
+            int limit = Math.min(extraFunctions.length, 1000) ;
 
             for (int i = 0; i < limit; i++) {
                 MathFunction<V> extraFunction = extraFunctions[i];
@@ -184,6 +205,7 @@ final public class FunctionSimulation<V extends MathValue> {
         System.out.println("-- Result: "+ bestFunction.getResult());
         System.out.println("-- Target: "+ target);
         System.out.println("-- Distance: "+ bestFunctionDistance);
+        System.out.println("-- DistanceMaxError: "+ this.distanceMaxError);
 
         System.out.println("-------------------------------------------------------------------------------------");
 
@@ -411,11 +433,16 @@ final public class FunctionSimulation<V extends MathValue> {
         }
 
         ArithmeticOperation[] enabledOperations = this.enabledOperations;
+        FunctionOperation[] templateOperations = this.templateOperations;
+
+        boolean hasTemplateOperations = templateOperations != null ;
+        boolean alwaysGenerateWithTemplateOperations = this.alwaysGenerateWithTemplateOperations && hasTemplateOperations ;
 
         long immutableGenerationID = 0 ;
         long runtimeGenerationID = 0 ;
 
         MathFunction<V>[] unflushedFunctions = new MathFunction[1000] ;
+        int unflushedFunctionsCapacity = unflushedFunctions.length-1 ;
         int unflushedFunctionsSz = 0 ;
 
         for (StackType stackType1 : StackType.values()) {
@@ -463,13 +490,25 @@ final public class FunctionSimulation<V extends MathValue> {
                                     if ( uniqueOperations.put(functionOperation, Boolean.TRUE) == null ) {
                                         if ( random.nextFloat() < skipOperationsRatio ) continue;
 
-                                        MathFunction<V> function2 = function.copy(functionOperation);
-
-                                        if ( unflushedFunctionsSz == unflushedFunctions.length ) {
+                                        if ( unflushedFunctionsSz >= unflushedFunctionsCapacity ) {
                                             unflushedFunctions = Arrays.copyOf(unflushedFunctions, unflushedFunctionsSz+1000) ;
+                                            unflushedFunctionsCapacity = unflushedFunctions.length-1 ;
                                         }
 
-                                        unflushedFunctions[unflushedFunctionsSz++] = function2 ;
+                                        if ( alwaysGenerateWithTemplateOperations ) {
+                                            MathFunction<V> function2Template = function.copy(functionOperation, templateOperations) ;
+                                            unflushedFunctions[unflushedFunctionsSz++] = function2Template;
+                                        }
+                                        else {
+                                            MathFunction<V> function2 = function.copy(functionOperation);
+                                            unflushedFunctions[unflushedFunctionsSz++] = function2 ;
+
+                                            if ( hasTemplateOperations ) {
+                                                MathFunction<V> function2Template = function.copy(functionOperation, templateOperations) ;
+                                                unflushedFunctions[unflushedFunctionsSz++] = function2Template;
+                                            }
+                                        }
+
                                     }
                                 }
 
